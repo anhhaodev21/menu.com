@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FF Aim Assist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: transparent;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        /* ========== CSS MENU CHÍNH ========== */
+        .menu {
+            position: fixed;
+            bottom: 30px;
+            right: 15px;
+            width: 280px;
+            background: linear-gradient(135deg, rgba(15, 15, 35, 0.96) 0%, rgba(8, 8, 20, 0.96) 100%);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+            backdrop-filter: blur(25px);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+            z-index: 9999;
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            overflow: hidden;
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        .menu.hidden {
+            opacity: 0;
+            transform: translateX(100px) scale(0.9);
+            pointer-events: none;
+            animation: none;
+        }
+        
+        /* Header menu với avatar */
+        .menu-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        /* AVATAR MENU - Thay URL ảnh tại đây */
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 48px;
+            background: linear-gradient(135deg, #e94560, #c62a40);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            /* ===== DÁN URL ẢNH AVATAR VÀO ĐÂY ===== */
+            background-image: url('https://i.imgur.com/0b0vl9L.gif');
+            background-size: cover;
+            background-position: center;
+            /* Nếu không có ảnh, sẽ hiển thị chữ FF */
+        }
+        
+        /* Fallback khi không có ảnh */
+        .avatar.no-image {
+            background: linear-gradient(135deg, #e94560, #c62a40);
+            font-size: 20px;
+        }
+        
+        .header-info {
+            flex: 1;
+        }
+        
+        .header-info h3 {
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .header-info p {
+            color: rgba(255,255,255,0.6);
+            font-size: 10px;
+            margin-top: 4px;
+        }
+        
+        /* Nút ẩn menu */
+        .hide-btn {
+            background: rgba(255,255,255,0.12);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hide-btn:active {
+            background: rgba(255,255,255,0.25);
+            transform: scale(0.95);
+        }
+        
+        /* Danh sách chức năng */
+        .functions-list {
+            padding: 12px;
+        }
+        
+        /* Mỗi item chức năng */
+        .func-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+        
+        .func-item:active {
+            background: rgba(255,255,255,0.1);
+            transform: scale(0.98);
+        }
+        
+        .func-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .func-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Switch toggle */
+        .switch {
+            width: 44px;
+            height: 24px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 24px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .switch.active {
+            background: #e94560;
+            box-shadow: 0 0 10px rgba(233,69,96,0.4);
+        }
+        
+        .switch::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 20px;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+        
+        .switch.active::after {
+            left: 22px;
+        }
+        
+        .func-desc {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 8px;
+        }
+        
+        /* ========== NÚT HIỆN MENU (GÓC TRÁI TRÊN) ========== */
+        .show-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #e94560, #c62a40);
+            border-radius: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            pointer-events: auto;
+            z-index: 10001;
+            opacity: 0;
+            transform: scale(0);
+        }
+        
+        .show-btn.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .show-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .show-btn span {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        
+        /* ========== LOADING ========== */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        
+        .loading.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            z-index: 10002;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+        
+        .toast.show {
+            opacity: 1;
+            bottom: 120px;
+        }
+        
+        /* Ripple */
+        .ripple {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: rgba(233,69,96,0.4);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: rippleAnim 0.5s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes rippleAnim {
+            from {
+                transform: scale(0);
+                opacity: 0.7;
+            }
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .func-item {
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu" id="menu">
+        <div class="menu-header">
+            <!-- ===== AVATAR MENU - THAY URL ẢNH TẠI ĐÂY ===== -->
+            <div class="avatar" id="menuAvatar" style="background-image: url('https://i.imgur.com/0b0vl9L.gif'); background-size: cover; background-position: center;"></div>
+            <div class="header-info">
+                <h3>FF AIM ASSIST</h3>
+                <p>Nguyen Anh Hao</p>
+            </div>
+            <button class="hide-btn" onclick="hideMenu()">—</button>
+        </div>
+        
+        <div class="functions-list">
+            <div class="func-item" onclick="toggleFunc('aimdrag', this)">
+                <div class="func-row">
+                    <span class="func-name">AIM DRAG</span>
+                    <span class="switch" id="sw-aimdrag"></span>
+                </div>
+                <div class="func-desc">Kéo tâm mượt, bám mục tiêu</div>
+            </div>
+            
+            <div class="func-item" onclick="toggleFunc('aimassist', this)">
+                <div class="func-row">
+                    <span class="func-name">AIM ASSIST</span>
+                    <span class="switch" id="sw-aimassist"></span>
+                </div>
+                <div class="func-desc">Hỗ trợ ngắm bắn chuẩn xác</div>
+            </div>
+            
+            <div class="func-item" onclick="toggleFunc('sensiaim', this)">
+                <div class="func-row">
+                    <span class="func-name">SENSIAIM</span>
+                    <span class="switch" id="sw-sensiaim"></span>
+                </div>
+                <div class="func-desc">Tối ưu độ nhạy, quét mượt</div>
+            </div>
+            
+            <div class="func-item" onclick="toggleFunc('smoothboost', this)">
+                <div class="func-row">
+                    <span class="func-name">SMOOTH BOOST</span>
+                    <span class="switch" id="sw-smoothboost"></span>
+                </div>
+                <div class="func-desc">Tăng FPS, giảm lag, chơi mượt</div>
+            </div>
+            
+            <div class="func-item" onclick="toggleFunc('norecoil', this)">
+                <div class="func-row">
+                    <span class="func-name">NO RECOIL</span>
+                    <span class="switch" id="sw-norecoil"></span>
+                </div>
+                <div class="func-desc">Chống giật, bắn chuẩn xác</div>
+            </div>
+            
+            <div class="func-item" onclick="toggleFunc('autofire', this)">
+                <div class="func-row">
+                    <span class="func-name">AUTO FIRE</span>
+                    <span class="switch" id="sw-autofire"></span>
+                </div>
+                <div class="func-desc">Tự động bắn khi ngắm trúng</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="show-btn" id="showBtn" onclick="showMenu()">
+        <span>🎯</span>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div>
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">Đang bật...</div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // ====== CẤU HÌNH URL ẢNH ======
+        // THAY URL ẢNH AVATAR TẠI ĐÂY
+        const AVATAR_URL = "https://i.imgur.com/0b0vl9L.gif";
+        
+        // THAY URL ẢNH NỀN MENU TẠI ĐÂY (nếu muốn)
+        const BACKGROUND_URL = "https://i.imgur.com/0b0vl9L.gif";
+        
+        // Áp dụng ảnh avatar
+        const avatarEl = document.getElementById('menuAvatar');
+        if (AVATAR_URL && AVATAR_URL !== "https://i.imgur.com/0b0vl9L.gif") {
+            avatarEl.style.backgroundImage = `url('${AVATAR_URL}')`;
+            avatarEl.style.backgroundSize = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+            avatarEl.classList.remove('no-image');
+        } else {
+            avatarEl.classList.add('no-image');
+            avatarEl.innerHTML = 'FF';
+            avatarEl.style.backgroundImage = 'none';
+            avatarEl.style.background = 'linear-gradient(135deg, #e94560, #c62a40)';
+        }
+        
+        // Áp dụng ảnh nền menu
+        const menuEl = document.getElementById('menu');
+        if (BACKGROUND_URL && BACKGROUND_URL !== "https://i.imgur.com/0b0vl9L.gif") {
+            menuEl.style.backgroundImage = `url('${BACKGROUND_URL}')`;
+            menuEl.style.backgroundSize = 'cover';
+            menuEl.style.backgroundPosition = 'center';
+        }
+        
+        // ========== OFFSETS FREE FIRE ==========
+        const OFFSETS = {
+            GWorld: "0x4DFFEF4",
+            GNames: "0x4DF0DC4",
+            LocalPlayer: "0xDEA964",
+            EntityList: "0x4DFFEF4",
+            BoneArray: "0x26A8",
+            ViewMatrix: "0x4E01B34",
+            Health: "0x108",
+            TeamId: "0xF4",
+            IsDead: "0x25B",
+            CurrentWeapon: "0x9A8",
+            FireRate: "0x12C8",
+            RecoilPattern: "0x1340",
+            FOV: "0x44C",
+            RenderScale: "0x2A8"
+        };
+        
+        // ========== CẤU HÌNH CHỨC NĂNG ==========
+        let activeFuncs = {
+            aimdrag: false,
+            aimassist: false,
+            sensiaim: false,
+            smoothboost: false,
+            norecoil: false,
+            autofire: false
+        };
+        
+        const funcNames = {
+            aimdrag: 'AIM DRAG',
+            aimassist: 'AIM ASSIST',
+            sensiaim: 'SENSIAIM',
+            smoothboost: 'SMOOTH BOOST',
+            norecoil: 'NO RECOIL',
+            autofire: 'AUTO FIRE'
+        };
+        
+        const DELAYS = { on: 2000, off: 5000 };
+        
+        // ========== KHỞI TẠO ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[FF Aim] Menu loaded');
+            setTimeout(() => { showMenuAuto(); }, 500);
+            loadState();
+            updateAllSwitches();
+            detectGameLaunch();
+            setupCornerDetection();
+        });
+        
+        function showMenuAuto() {
+            const menu = document.getElementById('menu');
+            const showBtn = document.getElementById('showBtn');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                showBtn.classList.remove('visible');
+                showToast('Menu đã hiện');
+            }
+        }
+        
+        function detectGameLaunch() {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    setTimeout(() => showMenuAuto(), 300);
+                }
+            });
+            window.addEventListener('focus', () => {
+                setTimeout(() => showMenuAuto(), 500);
+            });
+        }
+        
+        let cornerTouch = { startX: null, startY: null, startTime: null };
+        
+        function setupCornerDetection() {
+            document.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const x = touch.clientX;
+                const y = touch.clientY;
+                if (x < 60 && y < 60) {
+                    cornerTouch.startX = x;
+                    cornerTouch.startY = y;
+                    cornerTouch.startTime = Date.now();
+                } else {
+                    cornerTouch.startX = null;
+                }
+            });
+            document.addEventListener('touchend', () => {
+                if (cornerTouch.startX !== null && Date.now() - cornerTouch.startTime < 500) {
+                    showMenu();
+                }
+                cornerTouch.startX = null;
+            });
+        }
+        
+        function showMenu() {
+            const menu = document.getElementById('menu');
+            const showBtn = document.getElementById('showBtn');
+            menu.classList.remove('hidden');
+            showBtn.classList.remove('visible');
+            showToast('Menu đã hiện');
+        }
+        
+        function hideMenu() {
+            const menu = document.getElementById('menu');
+            const showBtn = document.getElementById('showBtn');
+            menu.classList.add('hidden');
+            showBtn.classList.add('visible');
+            showToast('Menu đã ẩn, chạm góc trái trên để hiện lại');
+        }
+        
+        function toggleFunc(funcName, element) {
+            const isEnabling = !activeFuncs[funcName];
+            const delay = isEnabling ? DELAYS.on : DELAYS.off;
+            showLoading(isEnabling ? `Đang bật ${funcNames[funcName]}...` : `Đang tắt ${funcNames[funcName]}...`);
+            addRipple(element);
+            setTimeout(() => {
+                if (isEnabling) { activeFuncs[funcName] = true; }
+                else { activeFuncs[funcName] = false; }
+                updateSwitch(funcName);
+                saveState();
+                applyOffsets(funcName, isEnabling);
+                showToast(`${funcNames[funcName]} ${isEnabling ? 'đã bật' : 'đã tắt'}`);
+                hideLoading();
+            }, delay);
+        }
+        
+        function updateSwitch(funcName) {
+            const sw = document.getElementById(`sw-${funcName}`);
+            if (sw) {
+                if (activeFuncs[funcName]) { sw.classList.add('active'); }
+                else { sw.classList.remove('active'); }
+            }
+        }
+        
+        function updateAllSwitches() {
+            for (const func in activeFuncs) { updateSwitch(func); }
+        }
+        
+        function applyOffsets(funcName, enabled) {
+            const offsetMap = { aimdrag: 'BoneArray', aimassist: 'ViewMatrix', sensiaim: 'FOV', smoothboost: 'RenderScale', norecoil: 'RecoilPattern', autofire: 'FireRate' };
+            console.log(`[FF Patch] ${offsetMap[funcName]} -> ${enabled ? 'ENABLED' : 'DISABLED'}`);
+        }
+        
+        function addRipple(element) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = element.getBoundingClientRect();
+            ripple.style.position = 'absolute';
+            ripple.style.left = (rect.width/2) + 'px';
+            ripple.style.top = (rect.height/2) + 'px';
+            element.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 500);
+        }
+        
+        function showLoading(text) {
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            loadingText.textContent = text;
+            loading.classList.add('active');
+        }
+        
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            loading.classList.remove('active');
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function saveState() {
+            localStorage.setItem('ff_aim_funcs', JSON.stringify(activeFuncs));
+        }
+        
+        function loadState() {
+            const saved = localStorage.getItem('ff_aim_funcs');
+            if (saved) {
+                try { Object.assign(activeFuncs, JSON.parse(saved)); } catch(e) {}
+            }
+        }
+        
+        console.log('[FF Aim] Ready - Avatar URL:', AVATAR_URL);
+        console.log('[FF Aim] Background URL:', BACKGROUND_URL);
+    </script>
+</body>
+</html>
